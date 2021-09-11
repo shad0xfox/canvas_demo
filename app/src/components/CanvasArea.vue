@@ -22,6 +22,29 @@ import imagePath from "../assets/back_image.jpeg";
 
 export default {
   name: "Canvas",
+  // todo: get data
+  created() {
+    this.images = [
+      {
+        id: 1,
+        path: imagePath,
+        x: 20,
+        y: 20,
+        width: 0,
+        height: 0,
+        isDragging: false,
+      },
+      {
+        id: 2,
+        path: imagePath,
+        x: 450,
+        y: 200,
+        width: 0,
+        height: 0,
+        isDragging: false,
+      },
+    ];
+  },
   mounted() {
     this.canvas = this.$refs.canvas;
     this.utilsCanvasInit();
@@ -32,7 +55,9 @@ export default {
   },
   methods: {
     utilsCanvasInit() {
-      this.canvas.width = this.$refs.card.$refs.link.clientWidth;
+      this.canvas.width =
+        (this.$refs.card.$refs && this.$refs.card.$refs.link.clientWidth) ||
+        window.innerWidth;
       this.canvas.height = window.innerHeight - 110;
       this.ctx = this.canvas.getContext("2d");
       this.clearCanvas();
@@ -55,6 +80,10 @@ export default {
         return;
       }
       this.isMouseDown = true;
+      this.clickDown = {
+        x: e.clientX,
+        y: e.clientY,
+      };
 
       const canvasPosition = this.canvas.getBoundingClientRect();
       const canvasX = e.clientX - canvasPosition.x;
@@ -63,11 +92,12 @@ export default {
       this.getSelectedImageOrNot(canvasX, canvasY);
     },
     onMouseUp(e) {
-      console.log("up", e.clientX, e.clientY);
       if (this.selectedImage) {
         this.selectedImage = null;
       }
-      // todo: click origin place or move a image
+      if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
+        console.log("same place");
+      }
       this.isMouseDown = false;
     },
     // todo: not need throttle, do it when axios
@@ -164,28 +194,13 @@ export default {
     isMouseDown: false,
     selectedImage: null,
     IMG_WIDTH: 350,
+    clickDown: {
+      x: 0,
+      y: 0,
+    },
     throttleMouseUp: null,
     // todo: from axios
-    images: [
-      {
-        id: 1,
-        path: imagePath,
-        x: 20,
-        y: 20,
-        width: 0,
-        height: 0,
-        isDragging: false,
-      },
-      {
-        id: 2,
-        path: imagePath,
-        x: 100,
-        y: 100,
-        width: 0,
-        height: 0,
-        isDragging: false,
-      },
-    ],
+    images: [],
     imageComponents: [
       {
         id: 1,
@@ -196,6 +211,7 @@ export default {
         image: null,
       },
     ],
+    comments: [],
   }),
 };
 </script>
