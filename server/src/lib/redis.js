@@ -20,7 +20,6 @@ function getClient() {
 
 async function createClient() {
   console.log(`connecting redis...`);
-  console.log({ REDIS_PORT, REDIS_HOST });
   client = await redisCreateClient({
     socket: {
       url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
