@@ -1,0 +1,49 @@
+{
+  "name": "conduit-node",
+  "version": "1.0.0",
+  "description": "conduit on node",
+  "main": "app.js",
+  "scripts": {
+    "start": "node ./app.js",
+    "dev": "nodemon ./app.js",
+    "test": "newman run ./tests/api-tests.postman.json -e ./tests/env-api-tests.postman.json",
+    "stop": "lsof -ti :3000 | xargs kill"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gothinkster/productionready-node-api.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "2.7.1",
+    "ejs": "3.1.6",
+    "errorhandler": "1.4.3",
+    "express": "4.17.1",
+    "express-jwt": "3.3.0",
+    "express-session": "1.17.1",
+    "helmet": "^4.6.0",
+    "jsonwebtoken": "7.1.9",
+    "lodash": "^4.17.21",
+    "morgan": "1.10.0",
+    "mysql2": "^2.3.0",
+    "passport": "^0.3.2",
+    "passport-local": "1.0.0",
+    "redis": "^3.1.2",
+    "request": "2.69.0",
+    "sequelize": "^6.6.5",
+    "slug": "0.9.1",
+    "socket.io": "^4.2.0",
+    "uuid": "8.3.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.1.1",
+    "newman": "^3.8.2",
+    "nodemon": "^1.11.0",
+    "prettier": "^2.4.0",
+    "supertest": "^6.1.6"
+  }
+}
