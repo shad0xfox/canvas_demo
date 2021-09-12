@@ -72,8 +72,9 @@ export default {
 
       this.getSelectedImageOrNot(canvasX, canvasY);
     },
-    onMouseUp(e) {
+    async onMouseUp(e) {
       if (this.selectedImage) {
+        await this.updateSelectedImageImage();
         this.resetSelectedImage();
       }
       if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
@@ -196,6 +197,14 @@ export default {
         id: image.id,
         imageInstance: null,
       }));
+    },
+    async updateSelectedImageImage() {
+      try {
+        const { id, x, y } = this.selectedImage;
+        await axios.post(`/canvas/images/${id}`, { x, y });
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
   data: () => ({

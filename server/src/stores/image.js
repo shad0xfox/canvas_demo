@@ -8,8 +8,13 @@ function getImages({ projections } = {}) {
   });
 }
 
+function updateImageById(id, { x, y }) {
+  return Model.update({ x, y }, { where: { id } });
+}
+
 module.exports = {
   getImages,
+  updateImageById,
 
   MIN_PROJECTIONS,
 };
