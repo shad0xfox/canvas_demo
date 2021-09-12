@@ -5,11 +5,13 @@ const helmet = require("helmet");
 const cors = require("cors");
 const errorhandler = require("errorhandler");
 const corsOptions = require("./config/cors.json");
+const { createClient } = require("./lib/redis");
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const db = require("./lib/db");
-db.connect().then(() => {
+db.connect().then(async () => {
+  await createClient();
   // Create global app object
   const app = express();
 
