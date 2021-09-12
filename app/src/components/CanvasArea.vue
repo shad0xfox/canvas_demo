@@ -18,38 +18,24 @@
 <script>
 // refs: https://codepen.io/Silvia_Chen/pen/rRRQxr
 import { debounce, throttle, find } from "lodash";
+import axios from "axios";
 import imagePath from "../assets/back_image.jpeg";
+
+axios.defaults.baseURL = "http://localhost:3000/api";
 
 export default {
   name: "Canvas",
-  // todo: get data
-  created() {
-    this.images = [
-      {
-        id: 1,
-        path: imagePath,
-        x: 20,
-        y: 20,
-        width: 0,
-        height: 0,
-        isDragging: false,
-      },
-      {
-        id: 2,
-        path: imagePath,
-        x: 450,
-        y: 200,
-        width: 0,
-        height: 0,
-        isDragging: false,
-      },
-    ];
+  async mounted() {
+    const images = await axios.get("/canvas/images");
+    this.images = images.data.map((image) => ({
+      ...image,
+      path: imagePath,
+    }));
     this.imageComponents = this.images.map((image) => ({
       id: image.id,
       imageInstance: null,
     }));
-  },
-  mounted() {
+
     this.canvas = this.$refs.canvas;
     this.utilsCanvasInit();
     window.addEventListener(
