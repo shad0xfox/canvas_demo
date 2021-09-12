@@ -44,6 +44,10 @@ export default {
         isDragging: false,
       },
     ];
+    this.imageComponents = this.images.map((image) => ({
+      id: image.id,
+      imageInstance: null,
+    }));
   },
   mounted() {
     this.canvas = this.$refs.canvas;
@@ -60,7 +64,6 @@ export default {
         window.innerWidth;
       this.canvas.height = window.innerHeight - 110;
       this.ctx = this.canvas.getContext("2d");
-      this.clearCanvas();
       this.ctx.lineCap = "round";
       this.ctx.strokeStyle = this.strokeColor;
       this.ctx.lineWidth = this.strokeWidth;
@@ -93,7 +96,7 @@ export default {
     },
     onMouseUp(e) {
       if (this.selectedImage) {
-        this.selectedImage = null;
+        this.resetSelectedImage();
       }
       if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
         console.log("same place");
@@ -103,7 +106,7 @@ export default {
     // todo: not need throttle, do it when axios
     onThrottleMouseMove(e) {
       if (typeof this.throttleMouseUp !== "function") {
-        this.throttleMouseUp = this.utilsThrottle(this.onMouseMove, 50);
+        this.throttleMouseUp = this.utilsThrottle(this.onMouseMove, 0);
       }
 
       this.throttleMouseUp(e);
@@ -118,12 +121,13 @@ export default {
       }
     },
     onMouseLeave() {
-      this.selectedImage = null;
+      if (this.selectedImage) {
+        this.resetSelectedImage();
+      }
       this.isMouseDown = false;
     },
     moveImage(x, y) {
       const { x: startX, y: startY, oldX, oldY } = this.selectedImage;
-
       const moveX = x - oldX;
       const moveY = y - oldY;
 
@@ -131,42 +135,58 @@ export default {
       this.selectedImage.y = startY + moveY;
       this.selectedImage.oldX = x;
       this.selectedImage.oldY = y;
+      this.selectedImage.isDragging = true;
 
-      this.clearCanvas();
       // not to clean corresponding images, can be optimized
       this.drawImages();
     },
     drawImages() {
+      this.clearCanvas();
+
       for (const image of this.images) {
         this.drawImage(image);
       }
     },
     drawImage(image) {
-      const imageComponent = find(this.imageComponents, { id: image.id });
-      let img;
-      if (imageComponent.image) {
-        img = imageComponent.image;
+      const { x, y, isDragging, id } = image;
+      const imageComponent = find(this.imageComponents, { id });
+
+      // use old image, do not wait the onload time
+      if (imageComponent.imageInstance) {
+        const img = imageComponent.imageInstance;
 
         const imageWidth = this.IMG_WIDTH;
         const imageHeight = this.IMG_WIDTH * (img.height / img.width);
         image.width = imageWidth;
         image.height = imageHeight;
-        this.ctx.drawImage(img, image.x, image.y, imageWidth, imageHeight);
+
+        if (isDragging) {
+          this.ctx.globalAlpha = 0.2;
+        }
+        this.ctx.drawImage(img, x, y, imageWidth, imageHeight);
+        this.ctx.globalAlpha = 1;
       } else {
-        img = new Image();
+        const img = new Image();
         img.src = imagePath;
         img.onload = () => {
           const imageWidth = this.IMG_WIDTH;
           const imageHeight = this.IMG_WIDTH * (img.height / img.width);
           image.width = imageWidth;
           image.height = imageHeight;
-          this.ctx.drawImage(img, image.x, image.y, imageWidth, imageHeight);
+          this.ctx.drawImage(img, x, y, imageWidth, imageHeight);
         };
-        imageComponent.image = img;
+        imageComponent.imageInstance = img;
       }
     },
     clearCanvas() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    resetSelectedImage() {
+      this.selectedImage.isDragging = false;
+      this.selectedImage = null;
+
+      // clear image with alpha
+      this.drawImages();
     },
     getSelectedImageOrNot(x, y) {
       for (let i = 0; i < this.images.length; i++) {
@@ -176,14 +196,17 @@ export default {
           x >= imageX &&
           x <= imageX + width &&
           y >= imageY &&
-          y <= imageY + height
+          y <= imageY + height &&
+          !this.images[i].isDragging
         ) {
           this.selectedImage = this.images[i];
           this.selectedImage.oldX = x;
           this.selectedImage.oldY = y;
-          break;
+          return;
         }
       }
+
+      this.selectedImage = null;
     },
   },
   data: () => ({
@@ -199,18 +222,8 @@ export default {
       y: 0,
     },
     throttleMouseUp: null,
-    // todo: from axios
     images: [],
-    imageComponents: [
-      {
-        id: 1,
-        image: null,
-      },
-      {
-        id: 2,
-        image: null,
-      },
-    ],
+    imageComponents: [],
     comments: [],
   }),
 };
