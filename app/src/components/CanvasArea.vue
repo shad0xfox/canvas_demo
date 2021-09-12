@@ -11,6 +11,14 @@
         @mousemove="onThrottleMouseMove"
         @mouseleave="onMouseLeave"
       ></canvas>
+      <v-icon
+        v-for="commentDialog in commentDialogs"
+        v-bind:key="commentDialog.id"
+        class="dialog"
+        :style="{ top: `${commentDialog.y}px`, left: `${commentDialog.x}px` }"
+      >
+        {{ "fas fa-comments" }}
+      </v-icon>
     </v-card>
   </v-container>
 </template>
@@ -24,21 +32,33 @@ import imagePath from "../assets/back_image.jpeg";
 axios.defaults.baseURL = "http://localhost:3000/api";
 
 export default {
-  name: "Canvas",
+  name: "Canvas ",
   async mounted() {
-    await this.getImages();
-
     this.canvas = this.$refs.canvas;
+
+    await this.getImages();
+    await this.getCommentDialogs();
+
     this.utilsCanvasInit();
     window.addEventListener(
       "resize",
       this.utilsDebounce(this.onWindowResize, 500)
     );
   },
+  computed: {
+    canvasStartX() {
+      return this.canvas.getBoundingClientRect().x;
+    },
+    canvasStartY() {
+      return this.canvas.getBoundingClientRect().y;
+    },
+  },
   methods: {
     utilsCanvasInit() {
       this.canvas.width =
-        (this.$refs.card.$refs && this.$refs.card.$refs.link.clientWidth) ||
+        (this.$refs &&
+          this.$refs.card &&
+          this.$refs.card.$refs.link.clientWidth) ||
         window.innerWidth;
       this.canvas.height = window.innerHeight - 110;
       this.ctx = this.canvas.getContext("2d");
@@ -66,9 +86,8 @@ export default {
         y: e.clientY,
       };
 
-      const canvasPosition = this.canvas.getBoundingClientRect();
-      const canvasX = e.clientX - canvasPosition.x;
-      const canvasY = e.clientY - canvasPosition.y;
+      const canvasX = e.clientX - this.canvasStartX;
+      const canvasY = e.clientY - this.canvasStartY;
 
       this.getSelectedImageOrNot(canvasX, canvasY);
     },
@@ -92,9 +111,8 @@ export default {
     },
     onMouseMove(e) {
       if (this.selectedImage) {
-        const canvasPosition = this.canvas.getBoundingClientRect();
-        const newX = e.clientX - canvasPosition.x;
-        const newY = e.clientY - canvasPosition.y;
+        const newX = e.clientX - this.canvasStartX;
+        const newY = e.clientY - this.canvasStartY;
 
         this.moveImage(newX, newY);
       }
@@ -188,20 +206,34 @@ export default {
       this.selectedImage = null;
     },
     async getImages() {
-      const images = await axios.get("/canvas/images");
-      this.images = images.data.map((image) => ({
-        ...image,
-        path: imagePath,
-      }));
-      this.imageComponents = this.images.map((image) => ({
-        id: image.id,
-        imageInstance: null,
-      }));
+      try {
+        const images = await axios.get("/canvas/images");
+        this.images = images.data.map((image) => ({
+          ...image,
+          path: imagePath,
+        }));
+        this.imageComponents = this.images.map((image) => ({
+          id: image.id,
+          imageInstance: null,
+        }));
+      } catch (error) {
+        console.log(error);
+      }
     },
     async updateSelectedImageImage() {
       try {
         const { id, x, y } = this.selectedImage;
         await axios.post(`/canvas/images/${id}`, { x, y });
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async getCommentDialogs() {
+      try {
+        console.log(this.canvasStartX, this.canvasStartY);
+        const commentDialogs = await axios.get("/canvas/comment-dialogs");
+
+        this.commentDialogs = commentDialogs.data;
       } catch (error) {
         console.log(error);
       }
@@ -214,6 +246,7 @@ export default {
     // drao info
     isMouseDown: false,
     selectedImage: null,
+    selectedDialog: null,
     IMG_WIDTH: 350,
     clickDown: {
       x: 0,
@@ -222,7 +255,16 @@ export default {
     throttleMouseUp: null,
     images: [],
     imageComponents: [],
-    comments: [],
+    commentDialogs: [],
   }),
 };
 </script>
+
+<style scoped>
+.dialog {
+  position: absolute;
+}
+.dialog:hover {
+  cursor: pointer;
+}
+</style>
