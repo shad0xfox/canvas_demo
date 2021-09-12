@@ -1,0 +1,14 @@
+module.exports = [
+  {
+    id: 1,
+    email: "jerrywen1230@gmail.com",
+    password: null,
+    name: "jerry",
+  },
+  {
+    id: 2,
+    email: "test2@gmail.com",
+    password: null,
+    name: "test2",
+  },
+];
