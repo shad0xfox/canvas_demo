@@ -26,15 +26,7 @@ axios.defaults.baseURL = "http://localhost:3000/api";
 export default {
   name: "Canvas",
   async mounted() {
-    const images = await axios.get("/canvas/images");
-    this.images = images.data.map((image) => ({
-      ...image,
-      path: imagePath,
-    }));
-    this.imageComponents = this.images.map((image) => ({
-      id: image.id,
-      imageInstance: null,
-    }));
+    await this.getImages();
 
     this.canvas = this.$refs.canvas;
     this.utilsCanvasInit();
@@ -193,6 +185,17 @@ export default {
       }
 
       this.selectedImage = null;
+    },
+    async getImages() {
+      const images = await axios.get("/canvas/images");
+      this.images = images.data.map((image) => ({
+        ...image,
+        path: imagePath,
+      }));
+      this.imageComponents = this.images.map((image) => ({
+        id: image.id,
+        imageInstance: null,
+      }));
     },
   },
   data: () => ({
