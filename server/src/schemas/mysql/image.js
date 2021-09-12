@@ -2,11 +2,11 @@ const Sequelize = require("sequelize");
 
 const schema = {
   x: {
-    type: Sequelize.STRING,
+    type: Sequelize.INTEGER,
     allowNull: false,
   },
   y: {
-    type: Sequelize.STRING,
+    type: Sequelize.INTEGER,
     allowNull: false,
   },
   path: {

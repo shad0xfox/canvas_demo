@@ -8,7 +8,7 @@
   ],
   "rules": {
     "eqeqeq": "error",
-    "no-console": "warn",
+    "no-console": "off",
     "prettier/prettier": "error",
     "no-unused-vars": 1
   },
