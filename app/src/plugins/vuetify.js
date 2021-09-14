@@ -6,7 +6,7 @@ Vue.use(Vuetify, {
     primary: "#252266",
   },
   icons: {
-    iconfont: "fa", // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4' || 'faSvg'
+    iconfont: "fa",
   },
 });
 
