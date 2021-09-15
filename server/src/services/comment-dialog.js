@@ -16,6 +16,7 @@ async function getCommentDialogsWithComments({
 
 module.exports = {
   getCommentDialogsWithComments,
+  updateCommentDialogById: CommentDialogStore.updateCommentDialogById,
 
   COMMENT_DIALOG_PROJECTIONS: {
     MIN: CommentDialogStore.MIN_PROJECTIONS,

@@ -10,34 +10,47 @@
         @mouseup="onMouseUp"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
-      ></canvas>
-      <v-icon
-        v-for="commentDialog in commentDialogs"
-        v-bind:key="commentDialog.id"
-        class="dialog"
-        :style="{ top: `${commentDialog.y}px`, left: `${commentDialog.x}px` }"
-        @mousedown="(e) => onIconMouseDown(e, commentDialog)"
-        @mouseup="(e) => onIconMouseUp(e, commentDialog)"
-        @mousemove="(e) => onIconMouseMove(e, commentDialog)"
       >
-        {{ "fas fa-comments" }}
-      </v-icon>
+      </canvas>
+      <draggable
+        v-model="commentDialogs"
+        @start="onDialogStartMove"
+        @end="onDialogEndMove"
+        @move="openDialogModal"
+      >
+        <v-icon
+          v-for="commentDialog in commentDialogs"
+          v-bind:key="commentDialog.id"
+          class="dialog"
+          v-show="commentDialog.visible"
+          @drag="(e) => onDialogMoving(e, commentDialog)"
+          @click="(e) => openDialogModal(e, commentDialog)"
+          :style="{
+            top: `${commentDialog.y}px`,
+            left: `${commentDialog.x}px`,
+          }"
+        >
+          {{ "fas fa-comments" }}
+        </v-icon>
+      </draggable>
     </v-card>
   </v-container>
 </template>
 
 <script>
-// @mouseup="onIconMouseUp"
-// @mousemove="onThrottleIconMouseMove"
 // refs: https://codepen.io/Silvia_Chen/pen/rRRQxr
 import { debounce, throttle, find } from "lodash";
 import axios from "axios";
 import imagePath from "../assets/back_image.jpeg";
+import draggable from "vuedraggable";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 
 export default {
   name: "CanvasDemo",
+  components: {
+    draggable,
+  },
   async mounted() {
     this.canvas = this.$refs.canvas;
 
@@ -59,6 +72,9 @@ export default {
     },
   },
   methods: {
+    openDialogModal(e, dialog) {
+      console.log(e.clientX, dialog);
+    },
     utilsCanvasInit() {
       this.canvas.width =
         this.$refs?.card?.$refs.link.clientWidth || window.innerWidth;
@@ -78,39 +94,48 @@ export default {
     onWindowResize() {
       this.utilsCanvasInit();
     },
-    onIconMouseDown(e, icon) {
-      if (this.isMouseDown) {
+    onDialogStartMove(e) {
+      const { oldIndex: index } = e;
+      const dialog = this.commentDialogs[index];
+
+      if (this.isMouseDown || dialog.isDragging) {
         return;
       }
+
       this.isMouseDown = true;
-
-      const canvasX = e.clientX - this.canvasStartX;
-      const canvasY = e.clientY - this.canvasStartY;
-
-      this.setClickDown(canvasX, canvasY);
-      icon.oldX = canvasX;
-      icon.oldY = canvasY;
+      dialog.isDragging = true;
+      dialog.visible = false;
     },
-    onIconMouseMove(e, icon) {
-      if (this.isMouseDown && !this.selectedImage) {
-        const newX = e.clientX - this.canvasStartX;
-        const newY = e.clientY - this.canvasStartY;
+    onDialogMoving(e, dialog) {
+      // drag event last time trigger will get it
+      if (e.clientX === 0) {
+        return;
+      }
+      const newX = e.clientX - this.canvasStartX;
+      const newY = e.clientY - this.canvasStartY;
 
-        this.moveDialog(icon, newX, newY);
+      // prevent same place trigger
+      if (this.isMouseDown && !(newX === dialog.oldX && newY === dialog.oldY)) {
+        const { oldX, oldY } = dialog;
+        // first time trigger, old position was null
+        const moveX = newX - (oldX || newX);
+        const moveY = newY - (oldY || newY);
+
+        dialog.oldX = newX;
+        dialog.oldY = newY;
+
+        this.moveDialog(dialog, moveX, moveY);
       }
     },
-    onIconMouseUp(e, icon) {
-      // api update dialog position
-      // todo: check icon on image or not
+    async onDialogEndMove(e) {
+      const { oldIndex: index } = e;
+      const dialog = this.commentDialogs[index];
 
-      // todo: save dialog position
       this.isMouseDown = false;
-    },
-    onIconMouseLeave(icon) {
-      // icon.x = icon.oldX;
-      // icon.y = icon.oldY;
-      // this.isMouseDown = false;
-      // socket set dialog
+      this.resetDraggedDialog(dialog);
+      this.checkOverlapping();
+
+      await this.updateDraggedDialog(dialog);
     },
     onMouseDown(e) {
       if (this.isMouseDown) {
@@ -123,8 +148,11 @@ export default {
 
       this.setClickDown(canvasX, canvasY);
       this.getSelectedImageOrNot(canvasX, canvasY);
-    },
 
+      if (this.selectedImage) {
+        this.checkOverlapping();
+      }
+    },
     async onMouseUp(e) {
       if (this.selectedImage) {
         await this.updateSelectedImageImage();
@@ -136,13 +164,13 @@ export default {
       this.isMouseDown = false;
     },
     // todo: not need throttle, do it when socket
-    onThrottleMouseMove(e) {
-      if (typeof this.throttleMouseUp !== "function") {
-        this.throttleMouseUp = this.utilsThrottle(this.onMouseMove, 0);
-      }
+    // onThrottleMouseMove(e) {
+    //   if (typeof this.throttleMouseUp !== "function") {
+    //     this.throttleMouseUp = this.utilsThrottle(this.onMouseMove, 0);
+    //   }
 
-      this.throttleMouseUp(e);
-    },
+    //   this.throttleMouseUp(e);
+    // },
     onMouseMove(e) {
       if (this.selectedImage) {
         const newX = e.clientX - this.canvasStartX;
@@ -159,10 +187,17 @@ export default {
 
         // socket set imagePosition
       }
+
       this.isMouseDown = false;
     },
     moveImage(x, y) {
-      const { x: startX, y: startY, oldX, oldY } = this.selectedImage;
+      const {
+        x: startX,
+        y: startY,
+        oldX,
+        oldY,
+        attatchedDialog,
+      } = this.selectedImage;
       const moveX = x - oldX;
       const moveY = y - oldY;
 
@@ -174,21 +209,35 @@ export default {
 
       // not to clean corresponding images, can be optimized
       this.drawImages();
+
+      if (attatchedDialog?.length) {
+        for (const dialog of attatchedDialog) {
+          this.moveDialog(dialog, moveX, moveY);
+        }
+      }
     },
-    moveDialog(dialog, x, y) {
-      console.log({ x, y });
-      const { x: startX, y: startY, oldX, oldY } = dialog;
-      console.log({ startX, startY, oldX, oldY });
-      const moveX = x - oldX;
-      const moveY = y - oldY;
-      console.log({ moveX, moveY });
+    async moveDialog(dialog, moveX, moveY) {
+      const { x: startX, y: startY } = dialog;
 
-      dialog.x = startX + moveX;
-      dialog.y = startY + moveY;
-      dialog.oldX = x;
-      dialog.oldY = y;
+      const newX = startX + moveX;
+      const newY = startY + moveY;
 
-      dialog.isDragging = true;
+      if (newX < 0) {
+        dialog.x = 0;
+      } else if (newX > this.canvas.width - 30) {
+        dialog.x = this.canvas.width - 30;
+      } else {
+        dialog.x = newX;
+      }
+
+      if (newY < 0) {
+        dialog.y = 0;
+      } else if (newY > this.canvas.height - 15) {
+        dialog.y = this.canvas.height - 15;
+      } else {
+        dialog.y = newY;
+      }
+
       // socket update dialog position
     },
     drawImages() {
@@ -239,6 +288,16 @@ export default {
       // clear image with alpha
       this.drawImages();
     },
+    resetDraggedDialog(dialog) {
+      dialog.isDragging = false;
+      dialog.oldX = null;
+      dialog.oldY = null;
+
+      // if dialogs are overlapping together, need set visible together
+      for (const dialogItem of this.commentDialogs) {
+        dialogItem.visible = true;
+      }
+    },
     getSelectedImageOrNot(x, y) {
       for (let i = 0; i < this.images.length; i++) {
         const { x: imageX, y: imageY, width, height } = this.images[i];
@@ -266,10 +325,23 @@ export default {
         y,
       };
     },
-    checkOverlapLapping(
-      { x1, y1, width1, height1 },
-      { x2, y2, wigth2, height2 }
-    ) {},
+    checkOverlapping() {
+      for (const image of this.images) {
+        image.attatchedDialog = [];
+        for (const dialog of this.commentDialogs) {
+          const { x, y } = dialog;
+          const { x: imageX, y: imageY, width, height } = image;
+          if (
+            x >= imageX &&
+            x <= imageX + width &&
+            y >= imageY &&
+            y <= imageY + height
+          ) {
+            image.attatchedDialog.push(dialog);
+          }
+        }
+      }
+    },
     async getImages() {
       try {
         const images = await axios.get("/canvas/images");
@@ -287,8 +359,22 @@ export default {
     },
     async updateSelectedImageImage() {
       try {
-        const { id, x, y } = this.selectedImage;
+        const { id, x, y, attatchedDialog } = this.selectedImage;
         await axios.post(`/canvas/images/${id}`, { x, y });
+
+        if (attatchedDialog?.length) {
+          for (const dialog of attatchedDialog) {
+            await this.updateDraggedDialog(dialog);
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async updateDraggedDialog(dialog) {
+      try {
+        const { id, x, y } = dialog;
+        await axios.post(`/canvas/comment-dialogs/${id}`, { x, y });
       } catch (error) {
         console.log(error);
       }
@@ -297,15 +383,10 @@ export default {
       try {
         const commentDialogs = await axios.get("/canvas/comment-dialogs");
 
-        this.commentDialogs = commentDialogs.data;
-
-        for (let i = this.images.length - 1; i >= 0; i--) {
-          for (const commentDialog of this.commentDialogs) {
-            if (commentDialog.isAttatched) {
-              continue;
-            }
-          }
-        }
+        this.commentDialogs = commentDialogs.data.map((commentDialog) => ({
+          ...commentDialog,
+          visible: true,
+        }));
       } catch (error) {
         console.log(error);
       }
@@ -320,6 +401,8 @@ export default {
     // canvas object
     canvas: null,
     ctx: null,
+    strokeColor: "#000000",
+    strokeWidth: 16,
     // drao info
     isMouseDown: false,
     selectedImage: null,
@@ -329,7 +412,6 @@ export default {
       x: 0,
       y: 0,
     },
-    throttleMouseUp: null,
     images: [],
     imageComponents: [],
     commentDialogs: [],

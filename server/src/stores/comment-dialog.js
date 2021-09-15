@@ -28,8 +28,13 @@ function getCommentDialogsWithComments({
   });
 }
 
+function updateCommentDialogById(id, { x, y }) {
+  return Model.update({ x, y }, { where: { id } });
+}
+
 module.exports = {
   getCommentDialogsWithComments,
+  updateCommentDialogById,
 
   MIN_PROJECTIONS,
 };
