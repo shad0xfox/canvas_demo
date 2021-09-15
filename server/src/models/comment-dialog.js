@@ -3,7 +3,9 @@ const { getInstance } = require("../lib/db");
 const UserModel = require("./user");
 const CommentModel = require("./comment");
 
-const CommentDialog = getInstance().define("comment_dialogs", schema, indexes);
+const CommentDialog = getInstance().define("comment_dialog", schema, indexes, {
+  freezeTableName: true,
+});
 
 CommentDialog.belongsTo(UserModel, {
   as: "user",

@@ -8,9 +8,9 @@ async function bulkCreateDocument() {
 async function init() {
   try {
     await bulkCreateDocument();
-    console.log("[mysql][users] fixture done");
+    console.log("[mysql][user] fixture done");
   } catch (error) {
-    console.log("[mysql][users] fixture failed", error);
+    console.log("[mysql][user] fixture failed", error);
   }
 }
 

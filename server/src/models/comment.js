@@ -2,7 +2,9 @@ const { schema, indexes } = require("../schemas/mysql/comment");
 const { getInstance } = require("../lib/db");
 const UserModel = require("./user");
 
-const Comment = getInstance().define("comments", schema, indexes);
+const Comment = getInstance().define("comment", schema, indexes, {
+  freezeTableName: true,
+});
 
 Comment.belongsTo(UserModel, {
   as: "user",

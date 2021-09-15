@@ -29,6 +29,10 @@ async function connect() {
     dialectOptions: {
       decimalNumbers: true,
     },
+    define: {
+      //prevent sequelize from pluralizing table names
+      freezeTableName: true,
+    },
   });
 
   try {
