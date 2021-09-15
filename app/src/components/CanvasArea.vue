@@ -196,7 +196,7 @@ export default {
         y: startY,
         oldX,
         oldY,
-        attatchedDialog,
+        attachedDialog,
       } = this.selectedImage;
       const moveX = x - oldX;
       const moveY = y - oldY;
@@ -210,8 +210,8 @@ export default {
       // not to clean corresponding images, can be optimized
       this.drawImages();
 
-      if (attatchedDialog?.length) {
-        for (const dialog of attatchedDialog) {
+      if (attachedDialog?.length) {
+        for (const dialog of attachedDialog) {
           this.moveDialog(dialog, moveX, moveY);
         }
       }
@@ -327,7 +327,7 @@ export default {
     },
     checkOverlapping() {
       for (const image of this.images) {
-        image.attatchedDialog = [];
+        image.attachedDialog = [];
         for (const dialog of this.commentDialogs) {
           const { x, y } = dialog;
           const { x: imageX, y: imageY, width, height } = image;
@@ -337,7 +337,7 @@ export default {
             y >= imageY &&
             y <= imageY + height
           ) {
-            image.attatchedDialog.push(dialog);
+            image.attachedDialog.push(dialog);
           }
         }
       }
@@ -359,11 +359,11 @@ export default {
     },
     async updateSelectedImageImage() {
       try {
-        const { id, x, y, attatchedDialog } = this.selectedImage;
+        const { id, x, y, attachedDialog } = this.selectedImage;
         await axios.post(`/canvas/images/${id}`, { x, y });
 
-        if (attatchedDialog?.length) {
-          for (const dialog of attatchedDialog) {
+        if (attachedDialog?.length) {
+          for (const dialog of attachedDialog) {
             await this.updateDraggedDialog(dialog);
           }
         }
