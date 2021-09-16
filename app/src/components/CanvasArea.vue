@@ -43,6 +43,10 @@ import { debounce, throttle, find } from "lodash";
 import axios from "axios";
 import imagePath from "../assets/back_image.jpeg";
 import draggable from "vuedraggable";
+import socketIO from "socket.io-client";
+import { SocketTypeEnums } from "../lib/enum";
+
+const { IMAGE_MOVING, IMAGE_MOVING_BROADCAST } = SocketTypeEnums;
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 
@@ -53,6 +57,7 @@ export default {
   },
   async mounted() {
     this.canvas = this.$refs.canvas;
+    this.socket = socketIO.connect("http://localhost:3000");
 
     await this.getImages();
     await this.getCommentDialogs();
@@ -62,6 +67,8 @@ export default {
       "resize",
       this.utilsDebounce(this.onWindowResize, 500)
     );
+
+    this.socketReceiverRegister();
   },
   computed: {
     canvasStartX() {
@@ -163,14 +170,6 @@ export default {
       }
       this.isMouseDown = false;
     },
-    // todo: not need throttle, do it when socket
-    // onThrottleMouseMove(e) {
-    //   if (typeof this.throttleMouseUp !== "function") {
-    //     this.throttleMouseUp = this.utilsThrottle(this.onMouseMove, 0);
-    //   }
-
-    //   this.throttleMouseUp(e);
-    // },
     onMouseMove(e) {
       if (this.selectedImage) {
         const newX = e.clientX - this.canvasStartX;
@@ -201,12 +200,17 @@ export default {
       const moveX = x - oldX;
       const moveY = y - oldY;
 
-      this.selectedImage.x = startX + moveX;
-      this.selectedImage.y = startY + moveY;
+      const newX = startX + moveX;
+      const newY = startY + moveY;
+
+      this.selectedImage.x = newX;
+      this.selectedImage.y = newY;
       this.selectedImage.oldX = x;
       this.selectedImage.oldY = y;
       this.selectedImage.isDragging = true;
 
+      const { id, isDragging } = this.selectedImage;
+      this.onThrottleSocketImageMove({ id, x: newX, y: newY, isDragging });
       // not to clean corresponding images, can be optimized
       this.drawImages();
 
@@ -215,6 +219,19 @@ export default {
           this.moveDialog(dialog, moveX, moveY);
         }
       }
+    },
+    onThrottleSocketImageMove(image) {
+      if (typeof this.throttleSocketImageMove !== "function") {
+        this.throttleSocketImageMove = this.utilsThrottle(
+          this.socketImageMove,
+          100
+        );
+      }
+
+      this.throttleSocketImageMove(image);
+    },
+    socketImageMove(image) {
+      this.socket.emit(IMAGE_MOVING, image);
     },
     async moveDialog(dialog, moveX, moveY) {
       const { x: startX, y: startY } = dialog;
@@ -391,6 +408,19 @@ export default {
         console.log(error);
       }
     },
+    socketReceiverRegister() {
+      const _drawImages = this.drawImages;
+      this.socket.on(IMAGE_MOVING_BROADCAST, (broadCastImage) => {
+        const { id, x, y, isDragging } = broadCastImage;
+        const movedImage = this.images.find((image) => image.id === id);
+
+        movedImage.x = x;
+        movedImage.y = y;
+        movedImage.isDragging = isDragging;
+
+        _drawImages();
+      });
+    },
     // -- todo socket event --
     // get image position by id
     // get dialog position by id
@@ -415,6 +445,8 @@ export default {
     images: [],
     imageComponents: [],
     commentDialogs: [],
+    socket: null,
+    throttleSocketImageMove: null,
   }),
 };
 </script>
