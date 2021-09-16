@@ -6,6 +6,14 @@ docker run --name mysql --platform linux/x86_64 -e MYSQL_ROOT_PASSWORD=password 
 ## create redis
 docker run --name redis_doge -p 6366:6379 -d redis
 
-## build app
-
+## run app
+npm run serve
 ## run server
+-- copy env file
+cp server/src/.env.sample server/src/.env
+-- init database
+node server/init_fixture.js
+-- start server
+node server/src/app.js
+## test
+npm run test

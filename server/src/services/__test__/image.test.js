@@ -29,6 +29,7 @@ describe("image service", () => {
 
       expect(ImageCacheStore.getImages.mock.calls.length).toBe(1);
       expect(ImageStore.getImages.mock.calls.length).toBe(1);
+      expect(ImageCacheStore.setImages.mock.calls.length).toBe(1);
       expect(result).toEqual(images);
     });
     it("return images in redis if redis has data", async () => {
@@ -40,6 +41,7 @@ describe("image service", () => {
       const result = await ImageService.getImages();
 
       expect(ImageCacheStore.getImages.mock.calls.length).toBe(1);
+      expect(ImageCacheStore.setImages.mock.calls.length).toBe(0);
       expect(ImageStore.getImages.mock.calls.length).toBe(0);
       expect(result).toEqual(JSON.parse(imagesInRedis));
     });
