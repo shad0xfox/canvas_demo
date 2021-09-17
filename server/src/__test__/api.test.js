@@ -51,11 +51,21 @@ describe("socket io test", () => {
     serverSocket[clientSocket2.id].emit("hello", "world");
   });
   test("socket1 send image moving then socket2 get broadcast", (done) => {
-    const testData = { x: 123, y: 346, isDragging: false };
+    const testData = { x: 123, y: 346, isDragging: true };
     clientSocket2.on(IMAGE_MOVING_BROADCAST, (arg) => {
       expect(arg).toEqual(testData);
+      clientSocket2.off(IMAGE_MOVING_BROADCAST);
       done();
     });
     clientSocket1.emit(IMAGE_MOVING, testData);
+  });
+  test("socket1 send image move end then socket2 get broadcast", (done) => {
+    const testData = { x: 123, y: 346, isDragging: false };
+    clientSocket2.on(IMAGE_MOVING_BROADCAST, (arg) => {
+      expect(arg).toEqual(testData);
+      clientSocket2.off(IMAGE_MOVING_BROADCAST);
+      done();
+    });
+    clientSocket1.emit(IMAGE_MOVE_END, testData);
   });
 });
