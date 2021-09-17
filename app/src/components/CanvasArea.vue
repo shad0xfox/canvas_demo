@@ -46,7 +46,8 @@ import draggable from "vuedraggable";
 import socketIO from "socket.io-client";
 import { SocketTypeEnums } from "../lib/enum";
 
-const { IMAGE_MOVING, IMAGE_MOVING_BROADCAST } = SocketTypeEnums;
+const { IMAGE_MOVING, IMAGE_MOVING_BROADCAST, IMAGE_MOVE_END } =
+  SocketTypeEnums;
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 
@@ -231,7 +232,9 @@ export default {
       this.throttleSocketImageMove(image);
     },
     socketImageMove(image) {
-      this.socket.emit(IMAGE_MOVING, image);
+      if (this.selectedImage) {
+        this.socket.emit(IMAGE_MOVING, image);
+      }
     },
     async moveDialog(dialog, moveX, moveY) {
       const { x: startX, y: startY } = dialog;
@@ -384,6 +387,7 @@ export default {
             await this.updateDraggedDialog(dialog);
           }
         }
+        this.socket.emit(IMAGE_MOVE_END, { id, x, y, isDragging: false });
       } catch (error) {
         console.log(error);
       }
@@ -408,21 +412,24 @@ export default {
         console.log(error);
       }
     },
+    updateBroadcastImage(image) {
+      const { id, x, y, isDragging } = image;
+
+      const movedImage = this.images.find((image) => image.id === id);
+      movedImage.x = x;
+      movedImage.y = y;
+      movedImage.isDragging = isDragging;
+
+      this.drawImages();
+    },
     socketReceiverRegister() {
-      const _drawImages = this.drawImages;
+      const _updateBroadcastImage = this.updateBroadcastImage;
+
       this.socket.on(IMAGE_MOVING_BROADCAST, (broadCastImage) => {
-        const { id, x, y, isDragging } = broadCastImage;
-        const movedImage = this.images.find((image) => image.id === id);
-
-        movedImage.x = x;
-        movedImage.y = y;
-        movedImage.isDragging = isDragging;
-
-        _drawImages();
+        _updateBroadcastImage(broadCastImage);
       });
     },
     // -- todo socket event --
-    // get image position by id
     // get dialog position by id
     // get create dialog
     // get delete dialog

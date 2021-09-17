@@ -1,3 +1,4 @@
 module.exports = {
-  handleUpdateImageSocketRequest: require("./handle-update-image-socket-request"),
+  handleImageMovingSocketRequest: require("./handle-image-moving-socket-request"),
+  handleImageMoveEndSocketRequest: require("./handle-image-move-end-socket-request"),
 };
