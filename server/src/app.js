@@ -38,6 +38,7 @@ app.use(function (req, res, next) {
 
 // socket.io
 router.use(require("./socket-routes/image"));
+router.use(require("./socket-routes/comment-dialog"));
 /// error handlers
 router.use((error, socket, args, _next) => {
   console.log(error);

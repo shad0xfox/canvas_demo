@@ -2,7 +2,8 @@ require("../config");
 const { getIO } = require("../lib/socket");
 const { io: Client } = require("socket.io-client");
 const {
-  image: { IMAGE_MOVING, IMAGE_MOVING_BROADCAST, IMAGE_MOVE_END },
+  image: { IMAGE_MOVING, IMAGE_MOVE_END, IMAGE_MOVING_BROADCAST },
+  dialog: { DIALOG_MOVING, DIALOG_MOVE_END, DIALOG_MOVING_BROADCAST },
 } = require("../lib/socket-events");
 
 jest.setTimeout(5000);
@@ -36,14 +37,14 @@ describe("socket io test", () => {
     clientSocket2.close();
   });
 
-  it("socket1 should work", (done) => {
+  test("socket1 should work", (done) => {
     clientSocket1.on("hello", (arg) => {
       expect(arg).toBe("world");
       done();
     });
     serverSocket[clientSocket1.id].emit("hello", "world");
   });
-  it("socket2 should work", (done) => {
+  test("socket2 should work", (done) => {
     clientSocket2.on("hello", (arg) => {
       expect(arg).toBe("world");
       done();
@@ -67,5 +68,23 @@ describe("socket io test", () => {
       done();
     });
     clientSocket1.emit(IMAGE_MOVE_END, testData);
+  });
+  test("socket1 send dialog moving then socket2 get broadcast", (done) => {
+    const testData = { x: 32, y: 23, isDragging: true };
+    clientSocket2.on(DIALOG_MOVING_BROADCAST, (arg) => {
+      expect(arg).toEqual(testData);
+      clientSocket2.off(DIALOG_MOVING_BROADCAST);
+      done();
+    });
+    clientSocket1.emit(DIALOG_MOVING, testData);
+  });
+  test("socket1 send dialog move end then socket2 get broadcast", (done) => {
+    const testData = { x: 33, y: 24, isDragging: false };
+    clientSocket2.on(DIALOG_MOVING_BROADCAST, (arg) => {
+      expect(arg).toEqual(testData);
+      clientSocket2.off(DIALOG_MOVING_BROADCAST);
+      done();
+    });
+    clientSocket1.emit(DIALOG_MOVE_END, testData);
   });
 });

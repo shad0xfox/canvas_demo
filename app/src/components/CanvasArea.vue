@@ -46,8 +46,14 @@ import draggable from "vuedraggable";
 import socketIO from "socket.io-client";
 import { SocketTypeEnums } from "../lib/enum";
 
-const { IMAGE_MOVING, IMAGE_MOVING_BROADCAST, IMAGE_MOVE_END } =
-  SocketTypeEnums;
+const {
+  IMAGE_MOVING,
+  IMAGE_MOVE_END,
+  IMAGE_MOVING_BROADCAST,
+  DIALOG_MOVING,
+  DIALOG_MOVE_END,
+  DIALOG_MOVING_BROADCAST,
+} = SocketTypeEnums;
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 
@@ -163,10 +169,11 @@ export default {
     },
     async onMouseUp(e) {
       if (this.selectedImage) {
-        await this.updateSelectedImageImage();
+        await this.updateSelectedImage();
         this.resetSelectedImage();
       }
       if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
+        // todo: create dialog
         console.log("same place");
       }
       this.isMouseDown = false;
@@ -182,7 +189,7 @@ export default {
     },
     async onMouseLeave() {
       if (this.selectedImage) {
-        await this.updateSelectedImageImage();
+        await this.updateSelectedImage();
         this.resetSelectedImage();
 
         // socket set imagePosition
@@ -236,8 +243,21 @@ export default {
         this.socket.emit(IMAGE_MOVING, image);
       }
     },
+    onThrottleSocketDialogMove(dialog) {
+      if (typeof this.throttleSocketDialogMove !== "function") {
+        this.throttleSocketDialogMove = this.utilsThrottle(
+          this.socketDialogMove,
+          100
+        );
+      }
+
+      this.throttleSocketDialogMove(dialog);
+    },
+    socketDialogMove(dialog) {
+      this.socket.emit(DIALOG_MOVING, dialog);
+    },
     async moveDialog(dialog, moveX, moveY) {
-      const { x: startX, y: startY } = dialog;
+      const { id, x: startX, y: startY, isDragging } = dialog;
 
       const newX = startX + moveX;
       const newY = startY + moveY;
@@ -259,6 +279,12 @@ export default {
       }
 
       // socket update dialog position
+      this.onThrottleSocketDialogMove({
+        id,
+        x: dialog.x,
+        y: dialog.y,
+        isDragging,
+      });
     },
     drawImages() {
       this.clearCanvas();
@@ -377,7 +403,7 @@ export default {
         console.log(error);
       }
     },
-    async updateSelectedImageImage() {
+    async updateSelectedImage() {
       try {
         const { id, x, y, attachedDialog } = this.selectedImage;
         await axios.post(`/canvas/images/${id}`, { x, y });
@@ -396,6 +422,8 @@ export default {
       try {
         const { id, x, y } = dialog;
         await axios.post(`/canvas/comment-dialogs/${id}`, { x, y });
+
+        this.socket.emit(DIALOG_MOVE_END, { id, x, y, isDragging: false });
       } catch (error) {
         console.log(error);
       }
@@ -412,8 +440,8 @@ export default {
         console.log(error);
       }
     },
-    updateBroadcastImage(image) {
-      const { id, x, y, isDragging } = image;
+    updateBroadcastImage(broadcastedImage) {
+      const { id, x, y, isDragging } = broadcastedImage;
 
       const movedImage = this.images.find((image) => image.id === id);
       movedImage.x = x;
@@ -422,15 +450,29 @@ export default {
 
       this.drawImages();
     },
+    updateBroadcastDialog(broadcastedDialog) {
+      const { id, x, y, isDragging } = broadcastedDialog;
+
+      const movedDialog = this.commentDialogs.find(
+        (dialog) => dialog.id === id
+      );
+      movedDialog.x = x;
+      movedDialog.y = y;
+      movedDialog.isDragging = isDragging;
+    },
     socketReceiverRegister() {
       const _updateBroadcastImage = this.updateBroadcastImage;
+      const _updateBroadcastDialog = this.updateBroadcastDialog;
 
       this.socket.on(IMAGE_MOVING_BROADCAST, (broadCastImage) => {
         _updateBroadcastImage(broadCastImage);
       });
+
+      this.socket.on(DIALOG_MOVING_BROADCAST, (broadCastDialog) => {
+        _updateBroadcastDialog(broadCastDialog);
+      });
     },
     // -- todo socket event --
-    // get dialog position by id
     // get create dialog
     // get delete dialog
   },
@@ -443,7 +485,6 @@ export default {
     // drao info
     isMouseDown: false,
     selectedImage: null,
-    selectedDialog: null,
     IMG_WIDTH: 350,
     clickDown: {
       x: 0,
@@ -454,6 +495,7 @@ export default {
     commentDialogs: [],
     socket: null,
     throttleSocketImageMove: null,
+    throttleSocketDialogMove: null,
   }),
 };
 </script>
