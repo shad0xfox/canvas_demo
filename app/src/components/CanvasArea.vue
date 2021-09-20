@@ -203,6 +203,7 @@ export default {
       }
     },
     async onMouseUp(e) {
+      // click same place, open create dialogModal
       if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
         const canvasX = e.clientX - this.canvasStartX - 10;
         const canvasY = e.clientY - this.canvasStartY - 10;
