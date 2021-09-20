@@ -16,15 +16,14 @@
         v-model="commentDialogs"
         @start="onDialogStartMove"
         @end="onDialogEndMove"
-        @move="openDialogModal"
       >
         <v-icon
           v-for="commentDialog in commentDialogs"
           v-bind:key="commentDialog.id"
-          class="dialog"
+          class="dialogMarker"
           v-show="commentDialog.visible"
           @drag="(e) => onDialogMoving(e, commentDialog)"
-          @click="(e) => openDialogModal(e, commentDialog)"
+          @click="() => openDialogModal(commentDialog)"
           :style="{
             top: `${commentDialog.y}px`,
             left: `${commentDialog.x}px`,
@@ -34,6 +33,26 @@
         </v-icon>
       </draggable>
     </v-card>
+    <div
+      ref="dialogDiv"
+      tabindex="0"
+      @keydown.esc="closeDialogModal"
+      v-click-outside="closeDialogModal"
+    >
+      <comment-dialog-modal
+        class="dialog"
+        ref="dialogModal"
+        v-show="selectedDialog"
+        :selectedDialog="selectedDialog"
+        @createComment="onCreateComment"
+        :style="{
+          top: `${selectedDialog ? selectedDialog.y - 20 : 0}px`,
+          left: `${
+            selectedDialog ? selectedDialog.x + canvasStartX + 100 : 0
+          }px`,
+        }"
+      />
+    </div>
   </v-container>
 </template>
 
@@ -42,9 +61,11 @@
 import { debounce, throttle, find } from "lodash";
 import axios from "axios";
 import imagePath from "../assets/back_image.jpeg";
-import draggable from "vuedraggable";
+import Draggable from "vuedraggable";
 import socketIO from "socket.io-client";
 import { SocketTypeEnums } from "../lib/enum";
+import CommentDialogModal from "./CommentDialogModal.vue";
+import ClickOutside from "vue-click-outside";
 
 const {
   IMAGE_MOVING,
@@ -60,7 +81,8 @@ axios.defaults.baseURL = "http://localhost:3000/api";
 export default {
   name: "CanvasDemo",
   components: {
-    draggable,
+    Draggable,
+    CommentDialogModal,
   },
   async mounted() {
     this.canvas = this.$refs.canvas;
@@ -86,8 +108,21 @@ export default {
     },
   },
   methods: {
-    openDialogModal(e, dialog) {
-      console.log(e.clientX, dialog);
+    openDialogModal(dialog) {
+      // workaround, make closeDialogModal run before openDialogModal
+      setTimeout(() => {
+        this.selectedDialog = dialog;
+        this.selectedDialog.visible = false;
+        this.$refs.dialogDiv.focus();
+        this.drawDialogPointerLine();
+      }, 100);
+    },
+    closeDialogModal() {
+      if (this.selectedDialog) {
+        this.selectedDialog.visible = true;
+        this.selectedDialog = null;
+        this.drawImages();
+      }
     },
     utilsCanvasInit() {
       this.canvas.width =
@@ -160,7 +195,7 @@ export default {
       const canvasX = e.clientX - this.canvasStartX;
       const canvasY = e.clientY - this.canvasStartY;
 
-      this.setClickDown(canvasX, canvasY);
+      this.setClickDown(e.clientX, e.clientY);
       this.getSelectedImageOrNot(canvasX, canvasY);
 
       if (this.selectedImage) {
@@ -168,14 +203,22 @@ export default {
       }
     },
     async onMouseUp(e) {
-      if (this.selectedImage) {
+      if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
+        const canvasX = e.clientX - this.canvasStartX - 10;
+        const canvasY = e.clientY - this.canvasStartY - 10;
+        this.openDialogModal({
+          x: canvasX,
+          y: canvasY,
+          new: true,
+          visible: false,
+        });
+      } else if (this.selectedImage) {
         await this.updateSelectedImage();
+      }
+      if (this.selectedImage) {
         this.resetSelectedImage();
       }
-      if (e.clientX === this.clickDown.x && e.clientY === this.clickDown.y) {
-        // todo: create dialog
-        console.log("same place");
-      }
+
       this.isMouseDown = false;
     },
     onMouseMove(e) {
@@ -324,6 +367,21 @@ export default {
         imageComponent.imageInstance = img;
       }
     },
+    drawDialogPointerLine() {
+      const { x, y } = this.selectedDialog;
+      const startX = x + 10;
+      const startY = y + 10;
+
+      this.ctx.beginPath();
+      this.ctx.arc(startX, startY, 8, 0, 2 * Math.PI, false);
+      this.ctx.fillStyle = "#FFD300";
+      this.ctx.fill();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(x + 100, y + 10);
+      this.ctx.stroke();
+    },
     clearCanvas() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
@@ -440,6 +498,9 @@ export default {
         console.log(error);
       }
     },
+    async onCreateComment(comment) {
+      this.$refs.dialogModal.resetInput();
+    },
     updateBroadcastImage(broadcastedImage) {
       const { id, x, y, isDragging } = broadcastedImage;
 
@@ -480,8 +541,8 @@ export default {
     // canvas object
     canvas: null,
     ctx: null,
-    strokeColor: "#000000",
-    strokeWidth: 16,
+    strokeColor: "#FFD300",
+    strokeWidth: 4,
     // drao info
     isMouseDown: false,
     selectedImage: null,
@@ -496,7 +557,12 @@ export default {
     socket: null,
     throttleSocketImageMove: null,
     throttleSocketDialogMove: null,
+    // dialog
+    selectedDialog: null,
   }),
+  directives: {
+    ClickOutside,
+  },
 };
 </script>
 
@@ -504,7 +570,10 @@ export default {
 .dialog {
   position: absolute;
 }
-.dialog:hover {
+.dialogMarker {
+  position: absolute;
+}
+.dialogMarker:hover {
   cursor: pointer;
 }
 </style>
