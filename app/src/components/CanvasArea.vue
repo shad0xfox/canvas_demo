@@ -213,10 +213,10 @@ export default {
           new: true,
           visible: false,
         });
-      } else if (this.selectedImage) {
-        await this.updateSelectedImage();
       }
+
       if (this.selectedImage) {
+        await this.updateSelectedImage();
         this.resetSelectedImage();
       }
 
