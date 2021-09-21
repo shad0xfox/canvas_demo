@@ -12,8 +12,7 @@ const {
 
 module.exports = async (req, res, next) => {
   try {
-    // waiting login implement
-    const userId = 1;
+    const userId = req.headers["user-id"];
     const { x, y, message, socketId } = req.body;
 
     const commentDialog = await createCommentDialogWithComment({

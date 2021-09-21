@@ -1,7 +1,6 @@
 const router = require("express").Router();
 
-// router.use("/login", require("./login"));
-
+router.use("/", require("./login"));
 router.use("/canvas", require("./canvas"));
 
 router.use((err, req, res, next) => {

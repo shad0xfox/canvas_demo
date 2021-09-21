@@ -11,8 +11,7 @@ const {
 
 module.exports = async (req, res, next) => {
   try {
-    // waiting user implement
-    const userId = 1;
+    const userId = req.headers["user-id"];
     const { id: dialogId, message, socketId } = req.body;
 
     const createdComment = await createComment({ dialogId, userId, message });

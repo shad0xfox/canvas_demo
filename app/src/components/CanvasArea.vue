@@ -60,7 +60,7 @@
 <script>
 // refs: https://codepen.io/Silvia_Chen/pen/rRRQxr
 import { debounce, throttle, find, concat } from "lodash";
-import axios from "axios";
+import axios from "../lib/axios";
 import imagePath from "../assets/back_image.jpeg";
 import Draggable from "vuedraggable";
 import socketIO from "socket.io-client";
@@ -80,13 +80,14 @@ const {
   COMMENT_CREATED_BROADCAST,
 } = SocketTypeEnums;
 
-axios.defaults.baseURL = "http://localhost:3000/api";
-
 export default {
   name: "CanvasDemo",
   components: {
     Draggable,
     CommentDialogModal,
+  },
+  destroyed() {
+    this.socket.disconnect();
   },
   async mounted() {
     this.canvas = this.$refs.canvas;
@@ -454,7 +455,7 @@ export default {
     async getImages() {
       try {
         const images = await axios.get("/canvas/images");
-        this.images = images.data.map((image) => ({
+        this.images = images.map((image) => ({
           ...image,
           path: imagePath,
         }));
@@ -495,7 +496,7 @@ export default {
       try {
         const commentDialogs = await axios.get("/canvas/comment-dialogs");
 
-        this.commentDialogs = commentDialogs.data.map((commentDialog) => ({
+        this.commentDialogs = commentDialogs.map((commentDialog) => ({
           ...commentDialog,
           visible: true,
         }));
@@ -508,14 +509,15 @@ export default {
         const { id, x, y, createDialog } = this.selectedDialog;
         const socketId = this.socket.id;
         if (createDialog) {
-          const createdCommentDialog = (
-            await axios.post("/canvas/comment-dialog", {
+          const createdCommentDialog = await axios.post(
+            "/canvas/comment-dialog",
+            {
               x,
               y,
               message,
               socketId,
-            })
-          ).data;
+            }
+          );
           this.commentDialogs = concat(this.commentDialogs, {
             ...createdCommentDialog,
             visible: false,
@@ -524,13 +526,11 @@ export default {
             (commentDialog) => commentDialog.id === createdCommentDialog.id
           );
         } else {
-          const createdComment = (
-            await axios.post("/canvas/comment", {
-              id,
-              message,
-              socketId,
-            })
-          ).data;
+          const createdComment = await axios.post("/canvas/comment", {
+            id,
+            message,
+            socketId,
+          });
 
           const { dialogId } = createdComment;
           const dialog = this.commentDialogs.find(
