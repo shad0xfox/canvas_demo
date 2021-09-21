@@ -1,20 +1,36 @@
-const Model = require("../models/image");
+const Model = require("../models/comment");
 
-const MIN_PROJECTIONS = ["id", "message", "createdAt"];
+const MIN_PROJECTIONS = ["id", "dialogId", "message", "createdBy", "createdAt"];
 
-function getImages({ projections } = {}) {
-  return Model.findAll({
-    attributes: projections,
+function createdComment({ dialogId, message, userId }, { transaction } = {}) {
+  return Model.create(
+    {
+      dialogId,
+      message,
+      createdBy: userId,
+    },
+    { transaction }
+  );
+}
+
+function getCommentById(id, { commentProjections, userProjections } = {}) {
+  return Model.findOne({
+    attributes: commentProjections,
+    where: {
+      id,
+    },
+    include: [
+      {
+        association: "user",
+        attributes: userProjections,
+      },
+    ],
   });
 }
 
-function updateImageById(id, { x, y }) {
-  return Model.update({ x, y }, { where: { id } });
-}
-
 module.exports = {
-  getImages,
-  updateImageById,
+  createdComment,
+  getCommentById,
 
   MIN_PROJECTIONS,
 };

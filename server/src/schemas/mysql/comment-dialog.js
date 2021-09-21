@@ -1,5 +1,8 @@
 const Sequelize = require("sequelize");
-const { ENUM_TYPE } = require("../../lib/enum");
+const {
+  ENUM_COMMENT_DIALOG_TYPE,
+  ENUM_COMMENT_DIALOG_STATUS,
+} = require("../../lib/enum");
 
 const schema = {
   x: {
@@ -17,7 +20,12 @@ const schema = {
   typeId: {
     type: Sequelize.INTEGER,
     allowNull: false,
-    defaultValue: ENUM_TYPE.NORMAL,
+    defaultValue: ENUM_COMMENT_DIALOG_TYPE.NORMAL,
+  },
+  status: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    defaultValue: ENUM_COMMENT_DIALOG_STATUS.PENDING,
   },
 };
 

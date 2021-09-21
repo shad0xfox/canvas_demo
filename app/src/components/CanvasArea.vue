@@ -45,6 +45,7 @@
         v-show="selectedDialog"
         :selectedDialog="selectedDialog"
         @createComment="onCreateComment"
+        @updateDialogStatus="onUpdateDialogStatus"
         :style="{
           top: `${selectedDialog ? selectedDialog.y - 20 : 0}px`,
           left: `${
@@ -58,7 +59,7 @@
 
 <script>
 // refs: https://codepen.io/Silvia_Chen/pen/rRRQxr
-import { debounce, throttle, find } from "lodash";
+import { debounce, throttle, find, concat } from "lodash";
 import axios from "axios";
 import imagePath from "../assets/back_image.jpeg";
 import Draggable from "vuedraggable";
@@ -74,6 +75,9 @@ const {
   DIALOG_MOVING,
   DIALOG_MOVE_END,
   DIALOG_MOVING_BROADCAST,
+  DIALOG_CREATED_BROADCAST,
+  DIALOG_DELETED_BROADCAST,
+  COMMENT_CREATED_BROADCAST,
 } = SocketTypeEnums;
 
 axios.defaults.baseURL = "http://localhost:3000/api";
@@ -210,7 +214,7 @@ export default {
         this.openDialogModal({
           x: canvasX,
           y: canvasY,
-          new: true,
+          createDialog: true,
           visible: false,
         });
       }
@@ -499,8 +503,76 @@ export default {
         console.log(error);
       }
     },
-    async onCreateComment(comment) {
-      this.$refs.dialogModal.resetInput();
+    async onCreateComment(message) {
+      try {
+        const { id, x, y, createDialog } = this.selectedDialog;
+        const socketId = this.socket.id;
+        if (createDialog) {
+          const createdCommentDialog = (
+            await axios.post("/canvas/comment-dialog", {
+              x,
+              y,
+              message,
+              socketId,
+            })
+          ).data;
+          this.commentDialogs = concat(this.commentDialogs, {
+            ...createdCommentDialog,
+            visible: false,
+          });
+          this.selectedDialog = this.commentDialogs.find(
+            (commentDialog) => commentDialog.id === createdCommentDialog.id
+          );
+        } else {
+          const createdComment = (
+            await axios.post("/canvas/comment", {
+              id,
+              message,
+              socketId,
+            })
+          ).data;
+
+          const { dialogId } = createdComment;
+          const dialog = this.commentDialogs.find(
+            (commentDialog) => commentDialog.id === dialogId
+          );
+
+          if (dialog) {
+            dialog.comments = concat(dialog.comments, createdComment);
+          }
+        }
+
+        this.$refs.dialogModal.resetInput();
+      } catch (error) {
+        console.log(error);
+        this.$refs.dialogModal.resetInput(false);
+      }
+    },
+    async onUpdateDialogStatus(status) {
+      try {
+        const { id } = this.selectedDialog;
+        const socketId = this.socket.id;
+
+        await axios.post(`/canvas/comment-dialogs/${id}/status`, {
+          status,
+          socketId,
+        });
+
+        this.commentDialogs = this.commentDialogs.reduce((result, dialog) => {
+          if (dialog.id === id) {
+            return result;
+          } else {
+            result.push(dialog);
+            return result;
+          }
+        }, []);
+
+        this.closeDialogModal();
+        this.$refs.dialogModal.resetInput();
+      } catch (error) {
+        console.log(error);
+        this.$refs.dialogModal.resetInput(false);
+      }
     },
     updateBroadcastImage(broadcastedImage) {
       const { id, x, y, isDragging } = broadcastedImage;
@@ -522,9 +594,42 @@ export default {
       movedDialog.y = y;
       movedDialog.isDragging = isDragging;
     },
+    insertBroadcastDialog(broadCastDialog) {
+      this.commentDialogs = concat(this.commentDialogs, {
+        ...broadCastDialog,
+        visible: true,
+      });
+    },
+    insertBroadcastComment(broadCastComment) {
+      const { dialogId } = broadCastComment;
+      const dialog = this.commentDialogs.find(
+        (commentDialog) => commentDialog.id === dialogId
+      );
+
+      if (dialog) {
+        dialog.comments = concat(dialog.comments, broadCastComment);
+      }
+    },
+    removeBroadcastDialog(dialogId) {
+      this.commentDialogs = this.commentDialogs.reduce((result, dialog) => {
+        if (dialog.id === dialogId) {
+          return result;
+        } else {
+          result.push(dialog);
+          return result;
+        }
+      }, []);
+
+      if (this.selectedDialog && dialogId === this.selectedDialog.id) {
+        this.closeDialogModal();
+      }
+    },
     socketReceiverRegister() {
       const _updateBroadcastImage = this.updateBroadcastImage;
       const _updateBroadcastDialog = this.updateBroadcastDialog;
+      const _insertBroadcastDialog = this.insertBroadcastDialog;
+      const _insertBroadcastComment = this.insertBroadcastComment;
+      const _removeBroadcastDialog = this.removeBroadcastDialog;
 
       this.socket.on(IMAGE_MOVING_BROADCAST, (broadCastImage) => {
         _updateBroadcastImage(broadCastImage);
@@ -533,9 +638,20 @@ export default {
       this.socket.on(DIALOG_MOVING_BROADCAST, (broadCastDialog) => {
         _updateBroadcastDialog(broadCastDialog);
       });
+
+      this.socket.on(DIALOG_CREATED_BROADCAST, (broadCastDialog) => {
+        _insertBroadcastDialog(broadCastDialog);
+      });
+
+      this.socket.on(COMMENT_CREATED_BROADCAST, (broadCastComment) => {
+        _insertBroadcastComment(broadCastComment);
+      });
+
+      this.socket.on(DIALOG_DELETED_BROADCAST, (broadcastDialog) => {
+        _removeBroadcastDialog(broadcastDialog.dialogId);
+      });
     },
     // -- todo socket event --
-    // get create dialog
     // get delete dialog
   },
   data: () => ({
