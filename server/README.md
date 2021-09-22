@@ -10,10 +10,15 @@ docker run --name redis_doge -p 6366:6379 -d redis
 npm run serve
 ## run server
 -- copy env file
+
 cp server/src/.env.sample server/src/.env
+
 -- init database
+
 node server/init_fixture.js
+
 -- start server
+
 node server/src/bin/server.js
 ## test
 npm run test
