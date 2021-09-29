@@ -1,6 +1,5 @@
 const { createClient: redisCreateClient } = require("redis");
 const { REDIS_HOST, REDIS_PORT } = process.env;
-console.log(REDIS_HOST, REDIS_PORT);
 
 /**
  * @typedef { import("redis/dist/lib/commands").RedisModules } RedisModules
