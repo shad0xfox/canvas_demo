@@ -1,5 +1,6 @@
 const { createClient: redisCreateClient } = require("redis");
 const { REDIS_HOST, REDIS_PORT } = process.env;
+console.log(REDIS_HOST, REDIS_PORT);
 
 /**
  * @typedef { import("redis/dist/lib/commands").RedisModules } RedisModules
@@ -21,9 +22,7 @@ function getClient() {
 async function createClient() {
   console.log(`connecting redis...`);
   client = await redisCreateClient({
-    socket: {
-      url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
-    },
+    url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
   });
 
   client.on("error", (err) => console.log("Redis Client Error", err));
