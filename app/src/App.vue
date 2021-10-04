@@ -25,7 +25,12 @@
     </v-app-bar>
 
     <v-main>
-      <router-view @login="onLogin" @signup="onSignup" />
+      <router-view
+        :username="username"
+        @login="onLogin"
+        @signup="onSignup"
+        @setUsername="onSetUsername"
+      />
     </v-main>
   </v-app>
 </template>
@@ -36,23 +41,21 @@ import axios from "./lib/axios";
 export default {
   name: "App",
   methods: {
-    logout() {
-      sessionStorage.clear();
+    onSetUsername(username) {
+      this.username = username;
+    },
+    async logout() {
+      await axios.post("/logout");
       this.username = null;
-      axios.defaults.headers.common["user-id"] = null;
       this.$router.push({ name: "Login" });
     },
     async onLogin({ email, password }) {
       try {
-        const { userId, username } = await axios.post("/login", {
+        await axios.post("/login", {
           email,
           password,
         });
 
-        sessionStorage.setItem("username", username);
-        sessionStorage.setItem("userId", userId);
-        axios.defaults.headers.common["user-id"] = userId;
-        this.username = username;
         this.$router.push({ name: "Canvas" });
       } catch (error) {
         console.log(error);
@@ -61,16 +64,12 @@ export default {
     },
     async onSignup({ email, password, username }) {
       try {
-        const createdUser = await axios.post("/signup", {
+        await axios.post("/signup", {
           email,
           password,
           username,
         });
 
-        sessionStorage.setItem("username", username);
-        sessionStorage.setItem("userId", createdUser.userId);
-        axios.defaults.headers.common["user-id"] = createdUser.userId;
-        this.username = username;
         this.$router.push({ name: "Canvas" });
       } catch (error) {
         console.log(error);

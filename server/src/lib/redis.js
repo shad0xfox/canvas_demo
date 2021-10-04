@@ -22,6 +22,7 @@ async function createClient() {
   console.log(`connecting redis...`);
   client = await redisCreateClient({
     url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
+    legacyMode: true,
   });
 
   client.on("error", (err) => console.log("Redis Client Error", err));

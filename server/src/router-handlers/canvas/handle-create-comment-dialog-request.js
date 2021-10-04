@@ -12,7 +12,7 @@ const {
 
 module.exports = async (req, res, next) => {
   try {
-    const userId = req.headers["user-id"];
+    const userId = req.user.id;
     const { x, y, message, socketId } = req.body;
 
     const commentDialog = await createCommentDialogWithComment({

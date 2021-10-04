@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "connect-redis": "^6.0.0",
     "cors": "^2.7.1",
     "dotenv": "^10.0.0",
     "ejs": "3.1.6",
@@ -31,7 +32,7 @@
     "mysql2": "^2.3.0",
     "passport": "^0.3.2",
     "passport-local": "1.0.0",
-    "redis": "^4.0.0-rc.1",
+    "redis": "^4.0.0-rc.2",
     "request": "2.69.0",
     "sequelize": "^6.6.5",
     "slug": "0.9.1",

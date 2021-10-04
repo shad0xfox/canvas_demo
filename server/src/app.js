@@ -1,12 +1,14 @@
 // refs: https://github.com/gothinkster/node-express-realworld-example-app
 const express = require("express");
+const router = require("socket.io-events")();
 const helmet = require("helmet");
 const cors = require("cors");
 const http = require("http");
 const errorhandler = require("errorhandler");
+const redisSession = require("./middleware/redis-session");
+const passport = require("./middleware/passport");
 const corsOptions = require("./config/cors.json");
 const { getIO } = require("./lib/socket");
-const router = require("socket.io-events")();
 
 const isProduction = process.env.NODE_ENV === "production";
 // Create global app object
@@ -20,6 +22,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(helmet());
 app.use(cors(corsOptions));
+app.use(redisSession);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use(express.static(__dirname + "/public"));
 
@@ -67,7 +73,9 @@ io.on("connection", (socket) => {
 // will print stacktrace
 if (!isProduction) {
   app.use(function (err, req, res, next) {
-    console.log(err.stack);
+    if (err.stack) {
+      console.log(err.stack);
+    }
 
     res.status(err.status || 500);
 

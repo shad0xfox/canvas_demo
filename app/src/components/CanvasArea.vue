@@ -545,7 +545,7 @@ export default {
         this.$refs.dialogModal.resetInput();
       } catch (error) {
         console.log(error);
-        this.$refs.dialogModal.resetInput(false);
+        this.$refs?.dialogModal?.resetInput(false);
       }
     },
     async onUpdateDialogStatus(status) {
@@ -571,7 +571,7 @@ export default {
         this.$refs.dialogModal.resetInput();
       } catch (error) {
         console.log(error);
-        this.$refs.dialogModal.resetInput(false);
+        this.$refs?.dialogModal?.resetInput(false);
       }
     },
     updateBroadcastImage(broadcastedImage) {

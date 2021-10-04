@@ -1,7 +1,11 @@
 const router = require("express").Router();
+const isLogin = require("../../middleware/isLogin");
 
 router.use("/", require("./login"));
+router.use(isLogin);
+
 router.use("/canvas", require("./canvas"));
+router.use("/user", require("./user"));
 
 router.use((err, req, res, next) => {
   if (err.name === "ValidationError") {
