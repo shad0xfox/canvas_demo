@@ -8,7 +8,12 @@ function setImages(images) {
   return redis.v4.setEx("images", process.env.redisTTL, images);
 }
 
+function clearImages() {
+  return redis.v4.del("images");
+}
+
 module.exports = {
   getImages,
   setImages,
+  clearImages,
 };

@@ -23,15 +23,7 @@ async function updateImageById(id, { x, y }) {
   const imagesFromRedis = await ImageCacheStore.getImages();
 
   if (imagesFromRedis) {
-    const parsedImages = JSON.parse(imagesFromRedis);
-
-    const updatedImage = parsedImages.find(
-      (parsedImage) => parsedImage.id === id
-    );
-    updatedImage.x = x;
-    updatedImage.y = y;
-
-    await ImageCacheStore.setImages(JSON.stringify(parsedImages));
+    await ImageCacheStore.clearImages();
   }
 }
 
