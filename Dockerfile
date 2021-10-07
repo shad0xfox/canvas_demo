@@ -4,6 +4,8 @@ RUN apk add --no-cache --virtual .gyp \
         python \
         make \
         g++
+RUN ls
+RUN ls
 
 COPY app/package.json /tmp/app/package.json
 COPY server/package.json /tmp/server/package.json
@@ -17,10 +19,9 @@ RUN mkdir -p /opt/server && cp -a /tmp/server/node_modules /opt/server/
 COPY app /opt/app
 RUN cd /opt/app && npm run build
 
-RUN cp -r /opt/app/dist /opt/server/public && rm -rf /opt/app
-
 WORKDIR "/opt/server"
 COPY server /opt/server
+RUN cp -r /opt/app/dist /opt/server/src/public && rm -rf /opt/app
 
 EXPOSE 3000
 CMD ["node","src/bin/server.js"]
