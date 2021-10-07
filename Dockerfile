@@ -4,8 +4,6 @@ RUN apk add --no-cache --virtual .gyp \
         python \
         make \
         g++
-RUN ls
-RUN ls
 
 COPY app/package.json /tmp/app/package.json
 COPY server/package.json /tmp/server/package.json
