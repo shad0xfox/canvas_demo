@@ -22,12 +22,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(helmet());
 app.use(cors(corsOptions));
+app.use(express.static(__dirname + "/public"));
+
 app.use(redisSession);
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-app.use(express.static(__dirname + "/public"));
 
 if (!isProduction) {
   app.use(errorhandler());

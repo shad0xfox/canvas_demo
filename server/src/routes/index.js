@@ -4,7 +4,7 @@ const path = require("path");
 router.use("/api", require("./api"));
 
 router.get(/^\//, async function (req, res) {
-  res.sendFile(path.resolve("public/index.html"));
+  res.sendFile(path.resolve("src/public/index.html"));
 });
 
 module.exports = router;
