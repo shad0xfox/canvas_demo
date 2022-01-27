@@ -1,4 +1,4 @@
-# canvas_demo
+#i canvas_demo
 ## Description
 Real time website, login, register, create and move comment, move image
 ## Skill
@@ -27,14 +27,14 @@ docker build -t canvas_demo .
 
 docker run -d -p 3000:3000 \
   -e NODE_ENV="production" \
-  -e DB_HOST=${your_db_host_ip} \
+  -e DB_HOST=192.168.2.137 \
   -e DB_PORT="3310" \
   -e DB_SCHEMA="doge_canvas" \
   -e DB_USER_NAME="root" \
   -e DB_PASSWORD="password" \
-  -e REDIS_HOST=${your_redis_host_ip} \
+  -e REDIS_HOST=192.168.2.137 \
   -e REDIS_PORT="6366" \
-  -e sessionSecret= "${your_session_secret}" \
+  -e sessionSecret="aaaa" \
   -e sessionTTL="86400" \
   -e redisTTL=120 \
   --name canvas_demo canvas_demo
