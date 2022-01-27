@@ -1,4 +1,4 @@
-#i canvas_demo
+# canvas_demo
 ## Description
 Real time website, login, register, create and move comment, move image
 ## Skill
